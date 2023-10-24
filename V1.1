@@ -1,0 +1,47 @@
+ // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract GreenNFT is ERC721, Ownable {
+    uint256 public constant MAX_SUPPLY = 1000000;
+    uint256 public mintPrice = 0.15 ether;
+    bool public isBurningEnabled = true;
+
+    mapping(address => bool) public blacklist;
+
+    constructor() ERC721("Green", "GRN") {}
+
+    function mint() external payable {
+        require(totalSupply() < MAX_SUPPLY, "All tokens have been minted"); 
+        require(msg.value >= mintPrice, "Insufficient funds");
+
+        _safeMint(msg.sender, totalSupply() + 1);
+    }
+
+    function burn(uint256 tokenId) external {
+        require(isBurningEnabled, "Burning is disabled");
+        require(_exists(tokenId), "Token does not exist"); 
+        require(ownerOf(tokenId) == msg.sender, "You are not the owner of this token");
+        require(!blacklist[msg.sender], "You are blacklisted");
+
+        _burn(tokenId);
+    }
+
+    function setMintPrice(uint256 price) external onlyOwner {
+        mintPrice = price;
+    }
+
+    function toggleBurning() external onlyOwner {
+        isBurningEnabled = !isBurningEnabled;
+    }
+
+    function addToBlacklist(address account) external onlyOwner {
+        blacklist[account] = true;
+    }
+
+    function removeFromBlacklist(address account) external onlyOwner {
+        blacklist[account] = false;
+    }
+}
